@@ -10,7 +10,7 @@ if(function_exists($_GET['function'])){
 function get_posts(){
     global $connect;
     global $base_url;
-    $query = $connect->query("SELECT * FROM posts");
+    $query = $connect->query("SELECT * FROM posts ORDER BY id DESC");
     $data = array();
     while($row=mysqli_fetch_object($query)){
         $data[] = $row;
@@ -68,13 +68,18 @@ function get_posts_by_id(){
 
 function insert_posts(){
     global $connect;
+
+    $data = file_get_contents("php://input");
+    $decoded_data = json_decode($data);
+    
     $check = array('title' => '', 'body' => '', 'image_path' => '');
-    $check_match = count(array_intersect_key($_POST, $check));
+
+    $check_match = count(array_intersect_key((array)$decoded_data, $check));
     if($check_match == count($check)){
         $now = date("Y-m-d H:i:s");
         
         $target_dir = 'uploads/'; // add the specific path to save the file
-        $decoded_file = base64_decode($_POST['image_path']); // decode the file
+        $decoded_file = base64_decode($decoded_data->image_path); // decode the file
         $mime_type = finfo_buffer(finfo_open(), $decoded_file, FILEINFO_MIME_TYPE); // extract mime type
         $extension = mime2ext($mime_type); // extract extension from mime type
         $file = uniqid() .'.'. $extension; // rename file as a unique name
@@ -82,8 +87,8 @@ function insert_posts(){
         file_put_contents($file_dir, $decoded_file); // save
         
         $result = mysqli_query($connect, "INSERT INTO posts SET 
-        title = '$_POST[title]',
-        body = '$_POST[body]',
+        title = '$decoded_data->title',
+        body = '$decoded_data->body',
         image_path = '$file',
         created_at = '$now',
         updated_at = '$now'");
@@ -116,13 +121,16 @@ function update_posts(){
         $id = $_GET['id'];
     }
 
+    $data = file_get_contents("php://input");
+    $decoded_data = json_decode($data);
+
     $check = array('title' => '', 'body' => '', 'image_path' => '');
-    $check_match = count(array_intersect_key($_POST, $check));
+    $check_match = count(array_intersect_key((array)$decoded_data, $check));
     if($check_match == count($check)){
         $now = date("Y-m-d H:i:s");
         $result = mysqli_query($connect, "UPDATE posts SET 
-        title = '$_POST[title]',
-        body = '$_POST[body]',
+        title = '$decoded_data->title',
+        body = '$decoded_data->body',
         image_path = 'test.png',
         updated_at = '$now'
         WHERE id = '$id'");
