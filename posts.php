@@ -77,7 +77,7 @@ function insert_posts(){
     $check_match = count(array_intersect_key((array)$decoded_data, $check));
     if($check_match == count($check)){
         $now = date("Y-m-d H:i:s");
-        
+    
         $target_dir = 'uploads/'; // add the specific path to save the file
         $decoded_file = base64_decode($decoded_data->image_path); // decode the file
         $mime_type = finfo_buffer(finfo_open(), $decoded_file, FILEINFO_MIME_TYPE); // extract mime type
@@ -91,18 +91,18 @@ function insert_posts(){
         body = '$decoded_data->body',
         image_path = '$file',
         created_at = '$now',
-        updated_at = '$now'");
+        updated_at = '$now'") or die(mysqli_error($connect));
 
         if($result){
             $response=array(
                 'status' => 1,
                 'message' =>'Insert Success'
-             );
+                );
         }else{
             $response=array(
                 'status' => 0,
                 'message' =>'Insert Failed.'
-             );
+                );
         }
     }else{
         $response=array(
@@ -128,12 +128,21 @@ function update_posts(){
     $check_match = count(array_intersect_key((array)$decoded_data, $check));
     if($check_match == count($check)){
         $now = date("Y-m-d H:i:s");
+
+        $target_dir = 'uploads/'; // add the specific path to save the file
+        $decoded_file = base64_decode($decoded_data->image_path); // decode the file
+        $mime_type = finfo_buffer(finfo_open(), $decoded_file, FILEINFO_MIME_TYPE); // extract mime type
+        $extension = mime2ext($mime_type); // extract extension from mime type
+        $file = uniqid() .'.'. $extension; // rename file as a unique name
+        $file_dir = $target_dir . $file;
+        file_put_contents($file_dir, $decoded_file); // save
+
         $result = mysqli_query($connect, "UPDATE posts SET 
         title = '$decoded_data->title',
         body = '$decoded_data->body',
-        image_path = 'test.png',
+        image_path = '$file',
         updated_at = '$now'
-        WHERE id = '$id'");
+        WHERE id = '$id'") or die(mysqli_error($connect));;
 
         if($result){
             $response=array(
@@ -237,3 +246,7 @@ function mime2ext($mime){
     }
     return false;
 }
+
+function throw_ex($er){  
+    throw new Exception($er);  
+}  
